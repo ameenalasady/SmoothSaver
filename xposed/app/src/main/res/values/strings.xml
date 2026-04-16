@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmoothSaver</string>
+    <string name="app_description">Prevents Battery Saver from forcing 60Hz on Pixel 7. Keeps your display at smooth 90Hz.</string>
+</resources>
