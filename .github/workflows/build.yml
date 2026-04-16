@@ -16,19 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Package KSU Module
-        run: |
-          cd module
-          zip -r ../SmoothSaver-KSU-${{ github.ref_name || 'dev' }}.zip .
-          cd ..
-          echo "KSU module packaged successfully"
-          ls -la SmoothSaver-KSU-*.zip
-
       - name: Upload KSU Module
         uses: actions/upload-artifact@v4
         with:
           name: SmoothSaver-KSU-Module
-          path: SmoothSaver-KSU-*.zip
+          path: module/
 
   build-xposed-module:
     name: Build Xposed Module
@@ -114,18 +106,25 @@ jobs:
     name: Create Release
     needs: [build-ksu-module, build-xposed-module, build-overlay]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
+      - name: Package KSU for Release
+        run: |
+          cd SmoothSaver-KSU-Module
+          zip -r ../SmoothSaver-KSU-${{ github.ref_name }}.zip .
+          cd ..
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name != 'master' && github.ref_name || 'v1.0.0-dev' }}
           files: |
-            SmoothSaver-KSU-Module/*.zip
+            SmoothSaver-KSU-*.zip
             SmoothSaver-Xposed-Module/*.apk
             SmoothSaver-Overlay/*.apk
           body: |
