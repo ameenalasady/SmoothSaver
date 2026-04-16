@@ -52,8 +52,7 @@ jobs:
       - name: Build Xposed Module
         working-directory: xposed
         run: |
-          chmod +x gradlew 2>/dev/null || true
-          ./gradlew assembleRelease --no-daemon
+          gradle assembleRelease --no-daemon
 
       - name: Rename APK
         run: |
@@ -84,15 +83,19 @@ jobs:
         run: |
           mkdir -p overlay/compiled
           
+          # Find aapt2
+          AAPT2_PATH=$(find $ANDROID_SDK_ROOT/build-tools -name "aapt2" | sort -r | head -1)
+          echo "Using aapt2: $AAPT2_PATH"
+          
           # Compile resources
-          aapt2 compile overlay/res/values/integers.xml -o overlay/compiled/
+          "$AAPT2_PATH" compile overlay/res/values/integers.xml -o overlay/compiled/
           
           # Find android.jar
           ANDROID_JAR=$(find $ANDROID_SDK_ROOT/platforms -name "android.jar" | sort -r | head -1)
           echo "Using android.jar: $ANDROID_JAR"
           
           # Link into APK
-          aapt2 link overlay/compiled/*.flat \
+          "$AAPT2_PATH" link overlay/compiled/*.flat \
             --manifest overlay/AndroidManifest.xml \
             -o SmoothSaverOverlay.apk \
             -I "$ANDROID_JAR" \
