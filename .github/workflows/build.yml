@@ -1,0 +1,141 @@
+name: Build SmoothSaver
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build-ksu-module:
+    name: Build KSU Module
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package KSU Module
+        run: |
+          cd module
+          zip -r ../SmoothSaver-KSU-${{ github.ref_name || 'dev' }}.zip .
+          cd ..
+          echo "KSU module packaged successfully"
+          ls -la SmoothSaver-KSU-*.zip
+
+      - name: Upload KSU Module
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmoothSaver-KSU-Module
+          path: SmoothSaver-KSU-*.zip
+
+  build-xposed-module:
+    name: Build Xposed Module
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Xposed Module
+        working-directory: xposed
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: |
+          cp xposed/app/build/outputs/apk/release/app-release-unsigned.apk \
+             SmoothSaver-Xposed-${{ github.ref_name || 'dev' }}.apk 2>/dev/null || \
+          cp xposed/app/build/outputs/apk/release/app-release.apk \
+             SmoothSaver-Xposed-${{ github.ref_name || 'dev' }}.apk 2>/dev/null || \
+          cp xposed/app/build/outputs/apk/debug/app-debug.apk \
+             SmoothSaver-Xposed-${{ github.ref_name || 'dev' }}.apk
+
+      - name: Upload Xposed Module
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmoothSaver-Xposed-Module
+          path: SmoothSaver-Xposed-*.apk
+
+  build-overlay:
+    name: Build RRO Overlay
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Overlay APK
+        run: |
+          mkdir -p overlay/compiled
+          
+          # Compile resources
+          aapt2 compile overlay/res/values/integers.xml -o overlay/compiled/
+          
+          # Find android.jar
+          ANDROID_JAR=$(find $ANDROID_SDK_ROOT/platforms -name "android.jar" | sort -r | head -1)
+          echo "Using android.jar: $ANDROID_JAR"
+          
+          # Link into APK
+          aapt2 link overlay/compiled/*.flat \
+            --manifest overlay/AndroidManifest.xml \
+            -o SmoothSaverOverlay.apk \
+            -I "$ANDROID_JAR" \
+            --no-auto-version
+          
+          echo "Overlay APK built successfully"
+          ls -la SmoothSaverOverlay.apk
+
+      - name: Upload Overlay APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmoothSaver-Overlay
+          path: SmoothSaverOverlay.apk
+
+  release:
+    name: Create Release
+    needs: [build-ksu-module, build-xposed-module, build-overlay]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            SmoothSaver-KSU-Module/*.zip
+            SmoothSaver-Xposed-Module/*.apk
+            SmoothSaver-Overlay/*.apk
+          body: |
+            ## SmoothSaver ${{ github.ref_name }}
+            
+            Prevents Battery Saver from forcing 60Hz on Pixel 7.
+            
+            ### Downloads
+            - **SmoothSaver-KSU-*.zip** — KernelSU/Magisk module (flash via manager)
+            - **SmoothSaver-Xposed-*.apk** — LSPosed module (install + enable in LSPosed)
+            - **SmoothSaverOverlay.apk** — RRO overlay (optional, for advanced users)
+            
+            ### Installation
+            See [README](../../blob/master/README.md) for detailed instructions.
+          draft: false
+          prerelease: false
