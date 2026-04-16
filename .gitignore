@@ -1,0 +1,25 @@
+# Build outputs
+*.apk
+*.zip
+build/
+xposed/build/
+xposed/app/build/
+xposed/.gradle/
+xposed/local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Local config
+local.properties
