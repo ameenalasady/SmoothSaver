@@ -37,9 +37,6 @@ android {
 }
 
 dependencies {
-    // LSPosed / Xposed API — compileOnly since the framework provides it at runtime
-    compileOnly("io.github.libxposed:api:101.0.1")
-
     // Legacy Xposed API for broader compatibility (using local jar to avoid repository issues)
     compileOnly(files("libs/api-82.jar"))
 }
