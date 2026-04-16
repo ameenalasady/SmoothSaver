@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.smoothsaver.overlay.refreshrate">
+
+    <overlay
+        android:targetPackage="android"
+        android:targetName="SmoothSaverRefreshRate"
+        android:priority="999"
+        android:isStatic="true" />
+
+    <application
+        android:hasCode="false"
+        android:label="SmoothSaver Refresh Rate Overlay" />
+
+</manifest>

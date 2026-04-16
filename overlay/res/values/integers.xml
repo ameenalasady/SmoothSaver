@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Override the default peak refresh rate during Battery Saver / Low Power Mode.
+        Default AOSP value is typically 60 (Hz). We set it to 90 to maintain
+        smooth display even while saving battery.
+
+        This is consumed by DisplayModeDirector's BatterySaverObserver when
+        calculating the refresh rate vote for PRIORITY_LOW_POWER_MODE.
+    -->
+    <integer name="config_defaultPeakRefreshRate">90</integer>
+
+    <!--
+        Some Android versions / OEMs use a separate config key specifically
+        for the power-saving refresh rate cap. Override both to be safe.
+    -->
+    <integer name="config_defaultRefreshRate">90</integer>
+</resources>
