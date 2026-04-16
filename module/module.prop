@@ -1,0 +1,6 @@
+id=smoothsaver
+name=SmoothSaver - 90Hz Battery Saver
+version=v1.0.0
+versionCode=1
+author=Ameen
+description=Keeps your Pixel 7 display at 90Hz when Battery Saver is enabled. Overrides the system's forced 60Hz cap via boot scripts and settings monitoring.
