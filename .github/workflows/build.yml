@@ -9,19 +9,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ksu-module:
-    name: Build KSU Module
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Upload KSU Module
-        uses: actions/upload-artifact@v4
-        with:
-          name: SmoothSaver-KSU-Module
-          path: module/
-
   build-xposed-module:
     name: Build Xposed Module
     runs-on: ubuntu-latest
@@ -61,50 +48,9 @@ jobs:
           name: SmoothSaver-Xposed-Module
           path: SmoothSaver-Xposed-*.apk
 
-  build-overlay:
-    name: Build RRO Overlay
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Build Overlay APK
-        run: |
-          mkdir -p overlay/compiled
-          
-          # Find aapt2
-          AAPT2_PATH=$(find $ANDROID_SDK_ROOT/build-tools -name "aapt2" | sort -r | head -1)
-          echo "Using aapt2: $AAPT2_PATH"
-          
-          # Compile resources
-          "$AAPT2_PATH" compile overlay/res/values/integers.xml -o overlay/compiled/
-          
-          # Find android.jar
-          ANDROID_JAR=$(find $ANDROID_SDK_ROOT/platforms -name "android.jar" | sort -r | head -1)
-          echo "Using android.jar: $ANDROID_JAR"
-          
-          # Link into APK
-          "$AAPT2_PATH" link overlay/compiled/*.flat \
-            --manifest overlay/AndroidManifest.xml \
-            -o SmoothSaverOverlay.apk \
-            -I "$ANDROID_JAR" \
-            --no-auto-version
-          
-          echo "Overlay APK built successfully"
-          ls -la SmoothSaverOverlay.apk
-
-      - name: Upload Overlay APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SmoothSaver-Overlay
-          path: SmoothSaverOverlay.apk
-
   release:
     name: Create Release
-    needs: [build-ksu-module, build-xposed-module, build-overlay]
+    needs: [build-xposed-module]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     permissions:
@@ -113,29 +59,19 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
-      - name: Package KSU for Release
-        run: |
-          cd SmoothSaver-KSU-Module
-          zip -r ../SmoothSaver-KSU-${{ github.ref_name }}.zip .
-          cd ..
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name != 'master' && github.ref_name || 'v1.0.0-dev' }}
           files: |
-            SmoothSaver-KSU-*.zip
             SmoothSaver-Xposed-Module/*.apk
-            SmoothSaver-Overlay/*.apk
           body: |
             ## SmoothSaver ${{ github.ref_name }}
             
             Prevents Battery Saver from forcing 60Hz on Pixel 7.
             
             ### Downloads
-            - **SmoothSaver-KSU-*.zip** — KernelSU/Magisk module (flash via manager)
             - **SmoothSaver-Xposed-*.apk** — LSPosed module (install + enable in LSPosed)
-            - **SmoothSaverOverlay.apk** — RRO overlay (optional, for advanced users)
             
             ### Installation
             See [README](../../blob/master/README.md) for detailed instructions.
